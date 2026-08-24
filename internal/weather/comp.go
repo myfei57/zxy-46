@@ -32,7 +32,7 @@ func (s *Service) ApplyCompensation(now time.Time) error {
 	if s.comp.State != CompPending {
 		return nil
 	}
-	if now.After(s.comp.EffectAt) {
+	if now.Before(s.comp.EffectAt) {
 		return errors.New("compensation not due")
 	}
 	s.comp.State = CompApplied

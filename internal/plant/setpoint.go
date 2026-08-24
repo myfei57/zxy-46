@@ -58,8 +58,8 @@ func (s *SetpointState) Current() float64 {
 }
 
 func (s *Service) SyncWeatherComp(comp weather.Compensation) error {
-	if comp.State != weather.CompPending {
-		return errors.New("compensation state not pending")
+	if comp.State != weather.CompApplied {
+		return errors.New("compensation not applied")
 	}
 	s.setpoint.ApplyCompensation(comp.Curve)
 	_ = s.audit.Record(audit.Entry{Source: "plant", ZoneID: "plant", Action: "weather-comp", Detail: "curve switched"})
