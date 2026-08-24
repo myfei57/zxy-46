@@ -21,7 +21,6 @@ func (s *Service) StartChiller(id string) (StartReport, error) {
 	if _, err := s.ElectLead(id); err != nil {
 		return StartReport{}, err
 	}
-	unit.BootCompressor()
 	pump, err := s.Pump(id)
 	if err != nil {
 		return StartReport{}, err
