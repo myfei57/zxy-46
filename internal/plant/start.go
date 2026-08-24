@@ -20,7 +20,17 @@ func (s *Service) StartChiller(id string) (StartReport, error) {
 	if err != nil {
 		return StartReport{}, err
 	}
-	if _, err := s.ElectLead(id); err != nil {
+	leader, err := s.ElectLead(id)
+	if err != nil {
+		// Lost the arbitration: another chiller is lead. id stays in
+		// standby and must not load, otherwise two chillers load at once
+		// and the condenser current hits the protection limit.
+		_ = s.audit.Record(audit.Entry{
+			Source: "plant",
+			ZoneID: id,
+			Action: "standby",
+			Detail: "deferred to lead chiller " + leader,
+		})
 		return StartReport{}, err
 	}
 	pump, err := s.pumpLocked(id)
@@ -48,6 +58,11 @@ func (s *Service) StopChiller(id string) error {
 		return err
 	}
 	unit.Stop()
+	// A stopped chiller cannot serve as lead. Surrender the role so a
+	// healthy standby can take over instead of being blocked.
+	if s.arbit.Leader() == id {
+		s.arbit.Release(id)
+	}
 	if pump, err := s.pumpLocked(id); err == nil {
 		pump.Stop()
 		s.pumps[pump.ID] = pump
